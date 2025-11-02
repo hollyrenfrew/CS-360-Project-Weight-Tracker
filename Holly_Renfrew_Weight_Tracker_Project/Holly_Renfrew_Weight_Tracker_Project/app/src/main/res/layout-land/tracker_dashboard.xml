@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:baselineAligned="false"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="?android:colorBackground">
+
+    <!-- Left Column: Current Goal & Chart -->
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1">
+
+        <TextView
+            android:id="@+id/textCurrentGoal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/goal_150_lbs"
+            android:textSize="18sp"
+            android:textColor="@color/headlineColor"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/buttonSettings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:layout_marginTop="12dp"/>
+
+        <com.github.mikephil.charting.charts.LineChart
+            android:id="@+id/lineChart"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginBottom="8dp"
+            tools:ignore="NestedWeights" />
+
+        <!-- Radio buttons BELOW chart -->
+        <RadioGroup
+            android:id="@+id/radioGroupGoalTrigger"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <RadioButton
+                android:id="@+id/radioBelowGoal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/lose_weight"
+                android:textColor="@color/headlineColor"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/radioAboveGoal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/gain_weight"
+                android:textColor="@color/headlineColor" />
+        </RadioGroup>
+
+    </LinearLayout>
+
+    <!-- Right Column: Weight entries and inputs -->
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/weightGridView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:scrollbars="vertical"
+            android:layout_marginBottom="12dp"
+            tools:ignore="NestedWeights" />
+
+        <EditText
+            android:id="@+id/editTextNewWeight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:autofillHints=""
+            android:hint="@string/enter_new_weight"
+            android:inputType="numberDecimal"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/headlineColor"
+            android:textColorHint="@color/paragraphColor" />
+
+        <Button
+            android:id="@+id/buttonAddEntry"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/add_new_weight_entry"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/editTextNewGoal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:autofillHints=""
+            android:hint="@string/enter_new_goal"
+            android:inputType="numberDecimal"
+            android:layout_marginTop="12dp"
+            android:textColor="@color/headlineColor"
+            android:textColorHint="@color/paragraphColor" />
+
+        <Button
+            android:id="@+id/buttonUpdateGoal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/set_goal"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+
+</LinearLayout>
