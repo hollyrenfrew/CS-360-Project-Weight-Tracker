@@ -13,10 +13,11 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.security.crypto.EncryptedSharedPreferences;
+import androidx.security.crypto.MasterKey;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -29,32 +30,64 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 
 public class DashboardTracker extends AppCompatActivity {
 
     private static final int SMS_PERMISSION_CODE = 100;
 
-    private int userId;
     private DatabaseHelper dbHelper;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
+    private int userId;
+    private LineChart lineChart;
     private TextView textCurrentGoal;
     private EditText editTextNewWeight, editTextNewGoal;
-    private LineChart lineChart;
+
     private boolean triggerBelowGoal = true;
 
     private WeightAdapter weightAdapter;
     private List<WeightEntry> weightEntries = new ArrayList<>();
+
+    private SharedPreferences securePrefs;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.tracker_dashboard);
 
-        // Get user ID from intent
+        dbHelper = new DatabaseHelper(this);
+
+        // -----------------------------
+        // SECURE SHARED PREFS (ENCRYPTED)
+        // -----------------------------
+        try {
+            MasterKey masterKey = new MasterKey.Builder(this)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build();
+
+            securePrefs = EncryptedSharedPreferences.create(
+                    this,
+                    "secure_prefs",
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            securePrefs = getSharedPreferences("WeightTrackerFallback", MODE_PRIVATE);
+        }
+
+        // -----------------------------
+        // GET USER ID
+        // -----------------------------
         userId = getIntent().getIntExtra("USER_ID", -1);
         if (userId == -1) {
             Toast.makeText(this, R.string.error_user_not_found, Toast.LENGTH_SHORT).show();
@@ -62,68 +95,96 @@ public class DashboardTracker extends AppCompatActivity {
             return;
         }
 
-        dbHelper = new DatabaseHelper(this);
-
-        // Initialize views
+        // -----------------------------
+        // LINK UI ELEMENTS
+        // -----------------------------
         textCurrentGoal = findViewById(R.id.textCurrentGoal);
         editTextNewWeight = findViewById(R.id.editTextNewWeight);
         editTextNewGoal = findViewById(R.id.editTextNewGoal);
-        Button buttonAddEntry = findViewById(R.id.buttonAddEntry);
-        Button buttonUpdateGoal = findViewById(R.id.buttonUpdateGoal);
-        RecyclerView weightGridView = findViewById(R.id.weightGridView);
         lineChart = findViewById(R.id.lineChart);
 
+        Button buttonAddEntry = findViewById(R.id.buttonAddEntry);
+        Button buttonUpdateGoal = findViewById(R.id.buttonUpdateGoal);
+        Button buttonSettings = findViewById(R.id.buttonSettings);
+
+        RecyclerView weightGridView = findViewById(R.id.weightGridView);
         RadioGroup radioGroupGoalTrigger = findViewById(R.id.radioGroupGoalTrigger);
         RadioButton radioBelowGoal = findViewById(R.id.radioBelowGoal);
         RadioButton radioAboveGoal = findViewById(R.id.radioAboveGoal);
 
-        // Default to Lose Weight
         radioBelowGoal.setChecked(true);
         triggerBelowGoal = true;
 
-        radioGroupGoalTrigger.setOnCheckedChangeListener((group, checkedId) ->
-                triggerBelowGoal = (checkedId == R.id.radioBelowGoal));
+        radioGroupGoalTrigger.setOnCheckedChangeListener((group, checkedId) ->{
+                    if (checkedId == radioBelowGoal.getId()) {
+                        triggerBelowGoal = true;
+                    } else if (checkedId == radioAboveGoal.getId()) {
+                        triggerBelowGoal = false;
+                    }
+                });
 
-        // Load weights from DB
-        weightEntries = dbHelper.getAllWeightEntries(userId);
-        updateGoalDisplay();
+        // -----------------------------
+        // LOAD DATA FROM DB (BACKGROUND THREAD)
+        // -----------------------------
+        executor.execute(() -> {
+            weightEntries = dbHelper.getAllWeightEntries(userId);
+            runOnUiThread(() -> {
+                setupRecycler(weightGridView);
+                updateGoalDisplay();
+                updateChart();
+            });
+        });
 
-        // Setup RecyclerView adapter
+        // -----------------------------
+        // BUTTON LISTENERS
+        // -----------------------------
+        buttonAddEntry.setOnClickListener(v -> addNewWeightEntry());
+        buttonUpdateGoal.setOnClickListener(v -> updateGoal());
+        buttonSettings.setOnClickListener(v ->
+                startActivity(new Intent(DashboardTracker.this, SmsPermissionTracker.class))
+        );
+    }
+
+
+    // ------------------------------------------------------------
+    // SETUP RECYCLER
+    // ------------------------------------------------------------
+    private void setupRecycler(RecyclerView rv) {
         weightAdapter = new WeightAdapter(this, dbHelper, weightEntries, new WeightAdapter.OnWeightChangeListener() {
             @Override
             public void onWeightUpdated() {
-                weightEntries = dbHelper.getAllWeightEntries(userId);
-                weightAdapter.setWeights(weightEntries);
-                updateChart();
-                checkAndSendSMS(getLatestWeight());
+                reloadWeights();
             }
 
             @Override
             public void onWeightDeleted() {
-                weightEntries = dbHelper.getAllWeightEntries(userId);
-                weightAdapter.setWeights(weightEntries);
-                updateChart();
+                reloadWeights();
             }
         });
 
-        weightGridView.setLayoutManager(new LinearLayoutManager(this));
-        weightGridView.setAdapter(weightAdapter);
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        rv.setAdapter(weightAdapter);
+    }
 
-        // Initial chart
-        updateChart();
 
-        // Button listeners
-        buttonAddEntry.setOnClickListener(v -> addNewWeightEntry());
-        buttonUpdateGoal.setOnClickListener(v -> updateGoal());
-
-        Button buttonSettings = findViewById(R.id.buttonSettings);
-        buttonSettings.setOnClickListener(v -> {
-            Intent intent = new Intent(DashboardTracker.this, SmsPermissionTracker.class);
-            startActivity(intent);
+    // ------------------------------------------------------------
+    // RELOAD WEIGHTS IN BACKGROUND
+    // ------------------------------------------------------------
+    private void reloadWeights() {
+        executor.execute(() -> {
+            weightEntries = dbHelper.getAllWeightEntries(userId);
+            runOnUiThread(() -> {
+                weightAdapter.setWeights(weightEntries);
+                updateChart();
+                checkAndSendSMS(getLatestWeight());
+            });
         });
     }
 
-    // Get newest weight (top of list)
+
+    // ------------------------------------------------------------
+    // LATEST WEIGHT
+    // ------------------------------------------------------------
     private double getLatestWeight() {
         if (!weightEntries.isEmpty()) {
             return weightEntries.get(0).getWeight();
@@ -131,6 +192,10 @@ public class DashboardTracker extends AppCompatActivity {
         return 0;
     }
 
+
+    // ------------------------------------------------------------
+    // ADD NEW WEIGHT ENTRY (THREAD SAFE)
+    // ------------------------------------------------------------
     private void addNewWeightEntry() {
         String weightStr = editTextNewWeight.getText().toString().trim();
         if (weightStr.isEmpty()) {
@@ -146,61 +211,36 @@ public class DashboardTracker extends AppCompatActivity {
             return;
         }
 
-        if (userId == -1) {
-            Toast.makeText(this, R.string.invalid_user_id, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Full timestamp with seconds
         String date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
 
-        long newId = dbHelper.addWeightAndGetId(userId, weight, date);
-        if (newId == -1) {
-            Toast.makeText(this, R.string.failed_to_add_weight, Toast.LENGTH_SHORT).show();
-            return;
-        }
+        executor.execute(() -> {
+            long newId = dbHelper.addWeightAndGetId(userId, weight, date);
 
-        // Reload all weights from DB
-        weightEntries = dbHelper.getAllWeightEntries(userId);
-        weightAdapter.setWeights(weightEntries);
-
-        editTextNewWeight.setText("");
-
-        // Update chart with new data
-        updateChart();
-
-        // Send SMS if applicable
-        checkAndSendSMS(weight);
-
-        Toast.makeText(this, getString(R.string.weight_added_fmt, weight), Toast.LENGTH_SHORT).show();
-
-        //  Goal check based on radio button selection
-        double goalWeight = dbHelper.getGoal(userId);
-
-        if (triggerBelowGoal) {
-            // "Lose weight" (below goal)
-            if (weight <= goalWeight) {
-                new AlertDialog.Builder(DashboardTracker.this, R.style.Theme_Holly_Renfrew_Weight_Tracker_Dialog)
-                        .setTitle(R.string.congrats_title)
-                        .setMessage(getString(R.string.met_goal_below_fmt, goalWeight))
-                        .setPositiveButton(android.R.string.ok, null)
-                        .show();
+            if (newId == -1) {
+                runOnUiThread(() ->
+                        Toast.makeText(this, R.string.failed_to_add_weight, Toast.LENGTH_SHORT).show());
+                return;
             }
-        } else {
-            // "Gain weight" (above goal)
-            if (weight >= goalWeight) {
-                new AlertDialog.Builder(DashboardTracker.this, R.style.Theme_Holly_Renfrew_Weight_Tracker_Dialog)
-                        .setTitle(R.string.congrats_title)
-                        .setMessage(getString(R.string.met_goal_above_fmt, goalWeight))
-                        .setPositiveButton(android.R.string.ok, null)
-                        .show();
-            }
-        }
 
+            weightEntries = dbHelper.getAllWeightEntries(userId);
+
+            runOnUiThread(() -> {
+                weightAdapter.setWeights(weightEntries);
+                editTextNewWeight.setText("");
+                updateChart();
+                checkAndSendSMS(weight);
+
+                Toast.makeText(this,
+                        getString(R.string.weight_added_fmt, weight),
+                        Toast.LENGTH_SHORT).show();
+            });
+        });
     }
 
 
-
+    // ------------------------------------------------------------
+    // UPDATE GOAL
+    // ------------------------------------------------------------
     private void updateGoal() {
         String goalStr = editTextNewGoal.getText().toString().trim();
         if (goalStr.isEmpty()) {
@@ -208,114 +248,111 @@ public class DashboardTracker extends AppCompatActivity {
             return;
         }
 
-        double goalWeight = Double.parseDouble(goalStr);
-        if (dbHelper.setGoal(userId, goalWeight)) {
-            Toast.makeText(this, R.string.goal_updated, Toast.LENGTH_SHORT).show();
-            updateGoalDisplay();
-            updateChart();
-            checkAndSendSMS(getLatestWeight());
-        }
+        double goal = Double.parseDouble(goalStr);
+
+        executor.execute(() -> {
+            boolean updated = dbHelper.setGoal(userId, goal);
+            runOnUiThread(() -> {
+                if (updated) {
+                    Toast.makeText(this, R.string.goal_updated, Toast.LENGTH_SHORT).show();
+                    updateGoalDisplay();
+                    updateChart();
+                    checkAndSendSMS(getLatestWeight());
+                }
+            });
+        });
     }
 
+
+    // ------------------------------------------------------------
+    // DISPLAY GOAL
+    // ------------------------------------------------------------
     private void updateGoalDisplay() {
-        double goalWeight = dbHelper.getGoal(userId);
-        textCurrentGoal.setText(getString(R.string.goal_label_fmt, goalWeight));
+        double goal = dbHelper.getGoal(userId);
+        textCurrentGoal.setText(getString(R.string.goal_label_fmt, goal));
     }
 
+
+    // ------------------------------------------------------------
+    // UPDATE CHART
+    // ------------------------------------------------------------
     private void updateChart() {
         List<Entry> entries = new ArrayList<>();
+        List<String> formattedLabels = new ArrayList<>();
+
+        SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        SimpleDateFormat formatter = new SimpleDateFormat("MM/dd HH:mm", Locale.getDefault());
 
         for (int i = 0; i < weightEntries.size(); i++) {
-            int reversedIndex = weightEntries.size() - 1 - i; // oldest first
-            WeightEntry we = weightEntries.get(reversedIndex);
+            WeightEntry we = weightEntries.get(weightEntries.size() - 1 - i); // oldest → newest
             entries.add(new Entry(i, (float) we.getWeight()));
+
+            try {
+                Date d = parser.parse(we.getDate());
+                assert d != null;
+                formattedLabels.add(formatter.format(d));
+            } catch (Exception e) {
+                formattedLabels.add("");
+            }
         }
 
         LineDataSet dataSet = new LineDataSet(entries, getString(R.string.weight_over_time_label));
         dataSet.setColor(ContextCompat.getColor(this, R.color.headlineColor));
         dataSet.setLineWidth(2f);
-        dataSet.setValueTextColor(ContextCompat.getColor(this, R.color.headlineColor));
         dataSet.setCircleRadius(4f);
-        dataSet.setDrawValues(true);
-        dataSet.setDrawCircles(true);
         dataSet.setCircleColor(ContextCompat.getColor(this, R.color.headlineColor));
+        dataSet.setValueTextColor(ContextCompat.getColor(this, R.color.headlineColor));
 
-        LineData lineData = new LineData(dataSet);
-        lineChart.setData(lineData);
+        lineChart.setData(new LineData(dataSet));
 
-        // X-axis formatter to show date/time
         lineChart.getXAxis().setValueFormatter(new ValueFormatter() {
             @Override
-            public String getFormattedValue(float value) {
-                int index = Math.round(value);
-                if (index >= 0 && index < weightEntries.size()) {
-                    String dbDate = weightEntries.get(index).getDate(); // "yyyy-MM-dd HH:mm:ss"
-                    try {
-                        SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-                        Date date = parser.parse(dbDate);
-                        if (date != null) {
-                            SimpleDateFormat formatter = new SimpleDateFormat("MM/dd HH:mm:ss", Locale.getDefault());
-                            return formatter.format(date);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+            public String getFormattedValue(float v) {
+                int index = Math.round(v);
+                if (index >= 0 && index < formattedLabels.size()) {
+                    return formattedLabels.get(index);
                 }
                 return "";
             }
         });
 
         lineChart.getXAxis().setPosition(XAxis.XAxisPosition.BOTTOM);
-        lineChart.getXAxis().setLabelRotationAngle(-45f);
-        lineChart.getXAxis().setTextColor(ContextCompat.getColor(this, R.color.headlineColor));
-        lineChart.getAxisLeft().setTextColor(ContextCompat.getColor(this, R.color.headlineColor));
-        lineChart.getAxisRight().setTextColor(ContextCompat.getColor(this, R.color.headlineColor));
-        lineChart.getLegend().setTextColor(ContextCompat.getColor(this, R.color.headlineColor));
-        lineChart.getDescription().setEnabled(false);
         lineChart.getLegend().setEnabled(false);
-
-
-        // Goal line
-        float goalWeight = (float) dbHelper.getGoal(userId);
-        lineChart.getAxisLeft().removeAllLimitLines();
-        LimitLine goalLine = new LimitLine(goalWeight);
-        goalLine.setLineColor(ContextCompat.getColor(this, R.color.buttonColor));
-        goalLine.setLineWidth(2f);
-        lineChart.getAxisLeft().addLimitLine(goalLine);
-
-        // Refresh chart
-        lineChart.getData().notifyDataChanged();
-        lineChart.notifyDataSetChanged();
+        lineChart.getDescription().setEnabled(false);
         lineChart.invalidate();
+
+        float goal = (float) dbHelper.getGoal(userId);
+        LimitLine goalLine = new LimitLine(goal);
+        lineChart.getAxisLeft().removeAllLimitLines();
+        lineChart.getAxisLeft().addLimitLine(goalLine);
     }
 
 
-
-
-    // Send SMS to user's registered phone
+    // ------------------------------------------------------------
+    // SMS TRIGGER
+    // ------------------------------------------------------------
     private void checkAndSendSMS(double currentWeight) {
-        // First check if user even wants SMS alerts
-        SharedPreferences prefs = getSharedPreferences("WeightTrackerPrefs", MODE_PRIVATE);
-        boolean smsEnabled = prefs.getBoolean("sms_alerts_enabled", false);
+        boolean smsEnabled = securePrefs.getBoolean("sms_alerts_enabled", false);
         if (!smsEnabled) return;
 
-        double goalWeight = dbHelper.getGoal(userId);
-        boolean shouldSend = (triggerBelowGoal && currentWeight <= goalWeight)
-                || (!triggerBelowGoal && currentWeight >= goalWeight);
+        double goal = dbHelper.getGoal(userId);
+        boolean shouldSend =
+                (triggerBelowGoal && currentWeight <= goal) ||
+                        (!triggerBelowGoal && currentWeight >= goal);
+
         if (!shouldSend) return;
 
-        String smsNumber = dbHelper.getUserPhone(userId); // fetch user's phone
-        if (smsNumber == null || smsNumber.isEmpty()) return;
+        String phone = dbHelper.getUserPhone(userId);
+        if (phone == null || phone.isEmpty()) return;
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
                 == PackageManager.PERMISSION_GRANTED) {
 
-            String smsText = triggerBelowGoal
+            String message = triggerBelowGoal
                     ? getString(R.string.sms_below_fmt, currentWeight)
                     : getString(R.string.sms_above_fmt, currentWeight);
 
-            SmsManager smsManager = getSystemService(SmsManager.class);
-            smsManager.sendTextMessage(smsNumber, null, smsText, null, null);
+            SmsManager.getDefault().sendTextMessage(phone, null, message, null, null);
 
         } else {
             ActivityCompat.requestPermissions(this,

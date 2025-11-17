@@ -5,49 +5,82 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.Toast;
 
+import com.google.android.material.switchmaterial.SwitchMaterial;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 public class SmsPermissionTracker extends AppCompatActivity {
 
-    private SharedPreferences prefs;
-
-    private static final String PREFS_NAME = "WeightTrackerPrefs";
-    private static final String KEY_SMS_ALERTS = "sms_alerts_enabled";
     private static final int SMS_PERMISSION_CODE = 100;
+
+    private SwitchMaterial switchSmsAlerts;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.sms_permission_tracker);
 
-        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        SwitchCompat switchSms = findViewById(R.id.switchSms);
+        switchSmsAlerts = findViewById(R.id.switchSms);
         Button buttonDone = findViewById(R.id.buttonDone);
 
-        //  Restore saved state
-        boolean enabled = prefs.getBoolean(KEY_SMS_ALERTS, false);
-        switchSms.setChecked(enabled);
+        SharedPreferences prefs = getSharedPreferences("WeightTrackerPrefs", MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean("sms_alerts_enabled", false);
+        switchSmsAlerts.setChecked(enabled);
 
-        //  Save when toggled
-        switchSms.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            prefs.edit().putBoolean(KEY_SMS_ALERTS, isChecked).apply();
-
+        // Toggle behavior
+        switchSmsAlerts.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
-                // Request permission if needed
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.SEND_SMS},
-                            SMS_PERMISSION_CODE);
-                }
+                requestSmsPermission();
             }
         });
 
-        //  Done button closes the screen
-        buttonDone.setOnClickListener(v -> finish());
+        // Save + close
+        buttonDone.setOnClickListener(v -> {
+            boolean enabledNow = switchSmsAlerts.isChecked();
+
+            prefs.edit()
+                    .putBoolean("sms_alerts_enabled", enabledNow)
+                    .apply();
+
+            Toast.makeText(this, "SMS alert settings updated", Toast.LENGTH_SHORT).show();
+            finish();
+        });
+    }
+
+    private void requestSmsPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.SEND_SMS},
+                    SMS_PERMISSION_CODE
+            );
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == SMS_PERMISSION_CODE) {
+
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "SMS permission granted!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "SMS permission denied.", Toast.LENGTH_SHORT).show();
+
+                // Turn switch off automatically if permission was denied
+                switchSmsAlerts.setChecked(false);
+            }
+        }
     }
 }

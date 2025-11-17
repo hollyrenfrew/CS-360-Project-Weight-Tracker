@@ -44,6 +44,9 @@ dependencies {
     // BCrypt
     implementation libs.bcrypt
 
+    // Encrypted SharedPreferences
+    implementation libs.security.crypto.v110alpha06
+
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core

@@ -9,6 +9,7 @@ mpandroidchart = "v3.1.0"
 bcrypt = "0.10.2"
 securityCrypto = "1.1.0"
 kotlin = "1.8.22" # <-- add
+securityCryptoVersion = "1.1.0-alpha06"
 
 [libraries]
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -20,6 +21,7 @@ mpandroidchart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "
 bcrypt = { module = "at.favre.lib:bcrypt", version.ref = "bcrypt" }
 security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
+security-crypto-v110alpha06 = { module = "androidx.security:security-crypto", version.ref = "securityCryptoVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
