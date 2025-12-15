@@ -22,12 +22,12 @@ Existing Code Functionality
 The Weight Tracker application is built using Java and the Android SDK. When a user opens the app, they're greeted with a login screen that connects to an SQLite database through a helper class. New users can register by entering a username, password, email, and phone number. Passwords are hashed using BCrypt, ensuring that no plain-text passwords are ever stored in the database.
 
 
-![app login screen](screenshots/weight_tracker/login.png)
+![app login screen](screenshots/login.png)
 
 Once logged in, users are taken to the main dashboard, where they can add new weight entries, update or delete existing ones, and set a personal goal:
 
 
-![app home screen](screenshots/weight_tracker/home_screen.png)
+![app home screen](screenshots/home_screen.png)
 
 
 All entries are time-tamped and stored in the database. The app uses the MPAndroidChart library to generate a line graph showing weight over time. Users can toggle between "gain weight" and "lose weight" goals using a simple radio button, and when they reach their target, the app can trigger an SMS notification congratulating them.
@@ -70,7 +70,7 @@ The project's structure is consistent with good Android design principles. Each 
 However, through review, I found that some UI classes still handle background operations, such as database inserts and updates, directly on the main thread. This can lead to performance issues or 'Application Not Responding' errors if the dataset grows or the device is slow.
 
 
-![executions that should be not on main](screenshots/weight_tracker/main_executions.png)
+![executions that should be not on main](screenshots/main_executions.png)
 
 *DashboardTracker.java* 
 
@@ -86,7 +86,7 @@ Each method is logically named and readable, but comments are minimal. There are
 
 
 
-![shows lack of comments for development](screenshots/weight_tracker/comment_lack.png)
+![shows lack of comments for development](screenshots/comment_lack.png)
 *DashboardTracker.java*
 
 
@@ -100,7 +100,7 @@ Variables are well-named, and data types are appropriate. However, some user inp
 
 
 
-![example of not normalizing user input](screenshots/weight_tracker/not_normalized_input.png)
+![example of not normalizing user input](screenshots/not_normalized_input.png)
 
 *RegisterTrackerActivity.java*
 
@@ -110,7 +110,7 @@ This can lead to duplicate records or login confusion. In addition, password str
 
 
 
-![original security showing upper case and number requirement](screenshots/weight_tracker/original_security.png)
+![original security showing upper case and number requirement](screenshots/original_security.png)
 
 *RegisterTrackerActivity.java*
 
@@ -119,13 +119,13 @@ This can lead to duplicate records or login confusion. In addition, password str
 In the chart logic, I found that the app calculates chart entries in reverse order:
 
 
-![chart logic error](screenshots/weight_tracker/reverse_order.png)
+![chart logic error](screenshots/reverse_order.png)
 
 *DashboardTracker.java*
 
 But still references the original list when labeling the X-axis:
 
-![chart logic error](screenshots/weight_tracker/x-axis.png)
+![chart logic error](screenshots/x_axis.png)
 
 *DashboardTracker.java*
 
@@ -145,9 +145,9 @@ First, I looked at how the app stores session data after a successful login. In 
 
 
 
-![plain text example](screenshots/weight_tracker/plain_text_1.png)
+![plain text example](screenshots/plain_text_1.png)
 
-![plain text example](screenshots/weight_tracker/plain_text_2.png)
+![plain text example](screenshots/plain_text_2.png)
 *LoginTracker.java*
 
 
@@ -159,7 +159,7 @@ To address this, I'll transition to EncryptedSharedPreferences, which automatica
 Next, I examined the login flow to see how the app handles invalid login attempts. I found that the application does not track failed attempts, and users can try to log in as many times as they want. This creates an opportunity for brute-force password guessing. Here's the code where failed attempts are handled, but no lockout is applied:
 
 
-![brute force security lack](screenshots/weight_tracker/lockout_lack.png)
+![brute force security lack](screenshots/lockout_lack.png)
 
 
 
@@ -167,7 +167,7 @@ I also checked other screens for similar storage concerns. In the SMS permission
 
 
 
-![use of shared preferences](screenshots/weight_tracker/shared_preferences.png)
+![use of shared preferences](screenshots/shared_preferences.png)
 
 *DashboardTracker.java*
 
