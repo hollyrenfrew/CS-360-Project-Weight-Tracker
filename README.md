@@ -1,18 +1,48 @@
-What will be included in your app’s description, and what kind of icon will best represent your app once it is made available in the app store?
+# Weight Tracker (Android)
 
-The app’s description will highlight its primary features, including logging weight entries, tracking progress over time through dynamic charts, and setting personal goals with notifications when those goals are met. It will emphasize ease of use, motivation, and user empowerment, appealing to anyone looking to maintain or improve their health. For example, the description could read: “Track your progress, set achievable goals, and celebrate your successes! The Weight Tracker app makes it simple to monitor your weight over time and stay motivated.” 
-The app icon will be clean and visually recognizable, featuring elements that suggest health and progress, such as a stylized scale, an upward or downward trending graph, or a minimalist human figure. Colors from the app theme will be incorporated to maintain brand consistency and make the icon stand out in the app store. Perhaps something that looks like this: 
- 
+## Overview
 
+The Weight Tracker is an Android app originally developed for **CS‑360: Mobile Architecture and Programming**. It lets users log daily weights, track trends, set personal goals, and receive notifications.
 
-Which versions of Android will your app run on? Have you included the most current version? 
+## Original Functionality
 
-The app will run on devices with Android 24 / API 34, the most current stable version of Android, which allows the app to take advantage of the latest platform features, such as improved notifications, security updates, and performance optimizations. 
+- User login and registration
+- SQLite database for weight entries
+- MPAndroidChart for trend graphs
+- SMS notifications based on goal status
+- Login “remember me” feature
 
-What permissions will your app ask for? Be sure to only request permissions that are necessary for your app to run. For example, does your manifest ask for permission to record phone audio when your app does not use it?
+## Enhancements (CS‑499)
 
-The app will only request the permissions that are strictly necessary for its core functionality. Currently, the app requires the “SEND_SMS” permission to notify users when they reach their weight goals via text message. No unnecessary permissions, such as microphone, camera, or location access, are requested, which ensures the app respects user privacy and meets app store requirements. 
+The focus of my enhancement was **security and robust design**:
 
-What is your plan to make money from the app? Consider whether your app will include ads and require a one-time payment or neither.
+### Security Improvements
 
-The app will be completely free to use, with no ads and no one-time payment required. The goal is to provide full functionality to all users without introducing barriers or interruptions. By keeping the app free and ad-free, it focuses entirely on user experience and accessibility, encouraging consistent use and trust. This approach prioritizes helping users track their weight and achieve their goals without any monetization distractions. Everyone should be able to track their weight if they want to in an easy way: you shouldn’t have to pay for such a service if you’re willing to put in the work to even use it. 
+- Replaced plain `SharedPreferences` with `EncryptedSharedPreferences`
+- Added **rate‑limiting and lockout** after multiple failed login attempts
+- Enforced **stronger password requirements**
+- Normalized input (usernames and emails to lowercase)
+
+### Design Improvements
+
+- Moved database operations off the main thread
+- Modularized login and session management
+- Improved input validation
+- Increased inline documentation
+- Centralized string resources
+
+## Skills Demonstrated
+
+- Secure software design and session handling
+- Android platform APIs (SQL, Async tasks, encrypted storage)
+- Improved usability and data validation
+
+## Course Outcome Alignment
+
+- **Outcome 2:** Professional communication through clear UI and messaging  
+- **Outcome 4:** Use of appropriate tools and secure coding techniques  
+- **Outcome 5:** Security mindset and handling of authentication workflows
+
+## Reflections
+
+This enhancement solidified my understanding of secure coding on mobile platforms and performance‑aware data access. Challenges included learning the Android security APIs and refactoring existing logic without breaking core functionality.
