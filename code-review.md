@@ -54,7 +54,6 @@ Overall, the application successfully connects user input to database operations
 
 
 Code Review Analysis
-
 --------------------
 
 
@@ -135,10 +134,7 @@ This can cause a mismatch between the displayed points and their corresponding t
 
 ### Defensive Programming
 
-
-
 The defensive programming check uncovered the most significant opportunities for improvement.
-
 
 
 First, I looked at how the app stores session data after a successful login. In reviewing LoginTracker.java, I noticed that the application saves both the user ID and the 'remember me' state directly in SharedPreferences. Because SharedPreferences stores values in plain text on the device, this exposes user identity information. Here is the section of code where this occurs:
@@ -151,9 +147,7 @@ First, I looked at how the app stores session data after a successful login. In 
 *LoginTracker.java*
 
 
-
 To address this, I'll transition to EncryptedSharedPreferences, which automatically encrypts data on disk using Android's KeyStore system.
-
 
 
 Next, I examined the login flow to see how the app handles invalid login attempts. I found that the application does not track failed attempts, and users can try to log in as many times as they want. This creates an opportunity for brute-force password guessing. Here's the code where failed attempts are handled, but no lockout is applied:
@@ -166,7 +160,6 @@ Next, I examined the login flow to see how the app handles invalid login attempt
 I also checked other screens for similar storage concerns. In the SMS permission screen, the app again uses plain SharedPreferences to save the user's SMS alert preference. While this is less sensitive than login data, it shows that SharedPreferences are used throughout the app, making the migration to EncryptedSharedPreferences a consistent and valuable improvement. Here is that code.
 
 
-
 ![use of shared preferences](screenshots/shared_preferences.png)
 
 *DashboardTracker.java*
@@ -175,10 +168,7 @@ I also checked other screens for similar storage concerns. In the SMS permission
 
 ### Target Areas for Improvement
 
-
-
 Summarizing the review, the most important areas for enhancement include:
-
 
 
 1.  Implementing secure data storage for session tokens.
@@ -198,11 +188,9 @@ Summarizing the review, the most important areas for enhancement include:
 ### Planned Enhancements
 
 
-
 My planned enhancement focuses on transforming the app's security and performance posture.
 
 Here's what I'll implement:
-
 
 
 -   EncryptedSharedPreferences: Replace plain SharedPreferences with encrypted preferences, so user IDs, tokens, or session flags are protected even if the device is compromised.
@@ -223,10 +211,7 @@ Here's what I'll implement:
 
 ### Practical Impact of Enhancements
 
-
-
 These changes make the project much closer to professional software development standards. By improving session security and login handling, I demonstrate an understanding of secure authentication workflows - skills that are vital in both mobile and web development.
-
 
 
 Threading and modularization enhancements will lead to better performance, stability, and easier debugging. And by improving input validation and documentation, the code becomes clearer and more user-friendly for future developers who might work on the project.
@@ -235,10 +220,7 @@ Threading and modularization enhancements will lead to better performance, stabi
 
 ### Skills Demonstrated
 
-
-
 These enhancements allow me to demonstrate multiple technical and professional skills, including:
-
 
 
 -   Secure Software Engineering: implementing encryption, secure storage, and input sanitization.
@@ -250,14 +232,9 @@ These enhancements allow me to demonstrate multiple technical and professional s
 -   Documentation and Professional Communication: improving readability and providing clear, structured explanations of each enhancement.
 
 
-
 ### Alignment with Course Outcomes
 
-
-
 My planned work aligns with several program outcomes from the CS-499 course:
-
-
 
 -   Outcome 4: Demonstrate the ability to use well-founded and innovative techniques, skills, and tools in computing practices for implementing computer solutions that deliver value and accomplish industry-specific goals.
 
@@ -268,14 +245,9 @@ My planned work aligns with several program outcomes from the CS-499 course:
 
 
 Conclusion
-
 ----------
 
-
-
 To conclude, the Weight Tracker project successfully fulfills its initial goal as a functional, user-friendly health application.
-
-
 
 Through this code review and enhancement plan, I've identified and documented specific areas where its design and security can be improved to reach professional quality.
 
