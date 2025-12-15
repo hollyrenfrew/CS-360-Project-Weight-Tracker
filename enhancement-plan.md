@@ -1,26 +1,26 @@
-\# Enhancement Plan – Software Engineering \& Design
+# Enhancement Plan – Software Engineering & Design
 
 
 
-\## Planned Enhancements
+## Planned Enhancements
 
 
 
-1\. Encrypt session storage
+1. Encrypt session storage
 
-2\. Add login rate limiting and lockout
+2. Add login rate limiting and lockout
 
-3\. Strengthen password validation
+3. Strengthen password validation
 
-4\. Normalize user input
+4. Normalize user input
 
-5\. Move database operations to background threads
+5. Move database operations to background threads
 
-6\. Improve documentation and localization
+6. Improve documentation and localization
 
 
 
-\## Expected Impact
+## Expected Impact
 
 
 
