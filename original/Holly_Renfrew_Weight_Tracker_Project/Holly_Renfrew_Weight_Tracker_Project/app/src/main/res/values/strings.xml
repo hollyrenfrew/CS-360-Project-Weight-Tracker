@@ -1,0 +1,46 @@
+<resources>
+    <string name="app_name">Weight Tracker</string>
+    <string name="we_can_send_you_sms_when_you_reach_your_goal_weight">We can send you SMS when you reach your goal weight.</string>
+    <string name="allow_sms_notifications">Allow SMS Notifications</string>
+    <string name="permission_status_not_requested">Permission status: Not requested</string>
+    <string name="permission_granted">Permission granted.</string>
+    <string name="add_new_weight_entry">Add New Weight Entry</string>
+    <string name="enter_new_goal">Enter new goal</string>
+    <string name="set_goal">Set Goal</string>
+    <string name="enter_new_weight">Enter new weight</string>
+    <string name="goal_150_lbs">Goal: 150 lbs</string>
+    <string name="goal">"Goal: "</string>
+    <string name="delete">Delete</string>
+    <string name="update">Update</string>
+    <string name="date_weight_lbs">Date: Weight lbs</string>
+    <string name="lose_weight">Lose Weight</string>
+    <string name="gain_weight">Gain Weight</string>
+    <string name="goal_1f_lbs">Goal: %.1f lbs</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="register">Register</string>
+    <string name="remember_me">Remember Me</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="back">Back</string>
+    <string name="email">Email</string>
+    <string name="notifications">Notifications</string>
+    <string name="enable_sms_goal_alerts">Enable SMS goal alerts</string>
+    <string name="done">Done</string>
+    <string name="enter_a_weight">Enter a weight</string>
+    <string name="invalid_number_format">Invalid number format</string>
+    <string name="invalid_user_id">Invalid user ID</string>
+    <string name="failed_to_add_weight">Failed to add weight</string>
+    <string name="weight_added_fmt">Weight added: %1$.1f lbs</string>
+    <string name="congrats_title"> Congratulations!</string>
+    <string name="met_goal_below_fmt">You met your goal! Your weight is now below %1$.1f!</string>
+    <string name="met_goal_above_fmt">You met your goal! Your weight is now above %1$.1f!</string>
+
+    <string name="sms_below_fmt">Your weight is below your goal: %1$.1f lbs.</string>
+    <string name="sms_above_fmt">Your weight is above your goal: %1$.1f lbs.</string>
+    <string name="enter_a_goal_weight">Enter a goal weight</string>
+    <string name="goal_updated">Goal updated</string>
+    <string name="error_user_not_found">Error: user not found</string>
+    <string name="goal_label_fmt">Goal: %1$.1f lbs</string>
+    <string name="weight_over_time_label">Weight Over Time</string>
+</resources>

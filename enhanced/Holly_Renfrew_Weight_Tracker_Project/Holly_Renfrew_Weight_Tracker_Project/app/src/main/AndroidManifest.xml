@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.holly_renfrew_weight_tracker_project">
+
+    <!-- Permission for sending SMS -->
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+
+    <application
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Holly_Renfrew_Weight_Tracker_Project">
+
+        <!-- Login activity -->
+        <activity android:name=".LoginTracker"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Dashboard activity -->
+        <activity android:name=".DashboardTracker" android:exported="false"/>
+
+        <activity android:name=".RegisterTrackerActivity"
+            android:label="Register" />
+
+        <activity android:name=".SmsPermissionTracker" android:label="SMS Settings"/>
+    </application>
+
+</manifest>
